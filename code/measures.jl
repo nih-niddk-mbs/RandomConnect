@@ -8,7 +8,7 @@ phase_indices(phase,Nphases,u,l)
 Assign index on domain 1 to Nphases to phase on domain l to u
 
 """
-phase_indices(phases,Nphases,u,l) = max.(ceil.(Int,(phases .- l)./(u-l)*Nphases),1)
+phase_indices(phases,Nphases,lower=-pi,upper=pi) = max.(ceil.(Int,(phases .- lower)./(upper-lower)*Nphases),1)
 
 """
 a3!(rho,phases,Nphases)
@@ -35,8 +35,6 @@ function rho!(rho::Vector,phases,Nphases)
         rho[i] += dN
     end
 end
-
-
 
 """
 a3(phase,Nphases=100)

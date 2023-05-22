@@ -2,7 +2,7 @@
 
 
 function integrate(p,W,f,sample_neurons=100)
-    v = 2*pi*rand(p.Ncells) #membrane voltage
+    v = p.reset*rand(p.Ncells) .+ (p.threshold-p.reset) #membrane voltage
     u = zeros(p.Ncells)
     integrate(p,W,f,u,v,sample_neurons)
 end
@@ -13,8 +13,8 @@ flif(u,v,I,alpha) = I + u - alpha*v
 
 function integrate(p,W,f,u::Vector,v::Vector,sample_neurons=100)
 
-vt = p.vthreshold # firing threshold
-vr = p.vreset  # reset strength
+vt = p.threshold # firing threshold
+vr = p.reset  # reset strength
 dt = p.dt # time step size
 Nsteps = p.Nsteps  # simulation steps
 Ncells = p.Ncells # number of neurons
@@ -45,12 +45,6 @@ for ti=1:Nsteps
         vel = f(u[ci],v[ci],extInput,alpha)  # v velocity
         v[ci] += dt*vel
 
-        # saved for visualization
-        if ci <= sample_neurons
-            vTotal[ci,ti] = v[ci]
-            uTotal[ci,ti] = u[ci]
-        end
-
         if v[ci] > vt  #spike occurred
             discount = exp(beta*(vt-v[ci])/vel)  # discount input by amount of time since crossing threshold
             v[ci] -= vr
@@ -62,6 +56,12 @@ for ti=1:Nsteps
                 Inputs[j] += W[j,ci]*discount
             end #end loop over synaptic projections
         end #end if(spike occurred)
+        # saved for visualization
+                if ci <= sample_neurons
+                    vTotal[ci,ti] = v[ci]
+                    uTotal[ci,ti] = u[ci]
+                end
+        
     end #end loop over neurons
 
     InputsPrev = copy(Inputs)

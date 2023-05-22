@@ -6,6 +6,7 @@ using PyCall
 using PyPlot
 using LinearAlgebra
 using Random
+using Statistics
 
 include("weights.jl")
 include("integrator.jl")
@@ -23,8 +24,8 @@ struct phaseparams
     maxrate::Float64
     sigma::Float64
     extInput::Float64
-    vthreshold::Float64
-    vreset::Float64
+    threshold::Float64
+    reset::Float64
     beta::Float64
     alpha::Float64
 end
@@ -41,13 +42,13 @@ function set_params(;
     maxrate = 500, # maximum average firing rate.
     sigma = .2, # connection weight std
     extInput = 0.005,  # external input
-    vthreshold = pi,
-    vrest = 2pi,
+    threshold = pi,
+    reset = 2pi,
     beta = .1, #40 #synaptic drive decay rate
     alpha = .5 # extra parameter
     )
 
-    phaseparams(dt,Nsteps,Ncells,maxrate,sigma,extInput,vthreshold,vrest,beta,alpha)
+    phaseparams(dt,Nsteps,Ncells,maxrate,sigma,extInput,threshold,reset,beta,alpha)
 
 end
 
