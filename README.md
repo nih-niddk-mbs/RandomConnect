@@ -1,3 +1,3 @@
 # RandomNet.jl
 
-Code to simulate randomly connect spiking neuron networks.
+Code to simulate and analyze randomly connect spiking neuron networks.
