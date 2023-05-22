@@ -2,7 +2,7 @@
 
 function Weights(p;rowsum=true)
 
-    wgt_distribution = Normal(0, sigma/sqrt(p.Ncells))
+    wgt_distribution = Normal(0, p.sigma/sqrt(p.Ncells))
 
     nc0Max = p.Ncells # outdegree = Ncells - 1
     w0Weights = zeros(nc0Max, p.Ncells)   # postcell x precell
