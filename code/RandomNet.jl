@@ -8,6 +8,21 @@ using LinearAlgebra
 using Random
 using Statistics
 
+export
+    plot,
+    set_params,
+    make_raster,
+    make_phaseplot,
+    make_synplot,
+    weights,
+    integrate,
+    compute_rho,
+    compute_c13,
+    compute_c33,
+    steady_state
+
+
+
 include("weights.jl")
 include("integrator.jl")
 include("measures.jl")

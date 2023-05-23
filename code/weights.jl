@@ -1,6 +1,6 @@
 # weights.jl
 
-function Weights(p;rowsum=true)
+function weights(p;rowsum=true)
 
     wgt_distribution = Normal(0, p.sigma/sqrt(p.Ncells))
 

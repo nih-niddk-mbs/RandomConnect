@@ -10,6 +10,26 @@ Assign index on domain 1 to Nphases to phase on domain l to u
 """
 phase_indices(phases,Nphases,lower=-pi,upper=pi) = max.(ceil.(Int,(phases .- lower)./(upper-lower)*Nphases),1)
 
+
+"""
+rho(phases::Matrix,Nphases)
+rho(phases::Vector,Nphases)
+
+
+
+"""
+
+function compute_rho(phases::Matrix,Nphases)
+    rho = zeros(Nphases,size(phases,2))
+    compute_rho!(rho,phases,Nphases)
+    return rho
+end
+
+function compute_rho(phases::Vector,Nphases)
+    rho = zeros(Nphases)
+    compute_rho!(rho,phases,Nphases)
+    return rho
+end
 """
 rho!(rho,phases,Nphases)
 
@@ -19,27 +39,7 @@ averaged over network and time
 - `phase': matrix of phases where rows = neurons, cols = time
 
 """
-"""
-rho(phases::Matrix,Nphases)
-rho(phases::Vector,Nphases)
-
-
-
-"""
-
-function rho(phases::Matrix,Nphases)
-    rho = zeros(Nphases,size(phases,2))
-    rho!(rho,phases,Nphases)
-    return rho
-end
-
-function rho(phases::Vector,Nphases)
-    rho = zeros(Nphases)
-    rho!(rho,phases,Nphases)
-    return rho
-end
-
-function rho!(rho::Matrix,phases,Nphases)
+function compute_rho!(rho::Matrix,phases,Nphases)
     dN = 1/size(phases,1)
     for t in 1:size(phases,2)
         phase_idx = phase_indices(phases[:,t],Nphases)
@@ -48,7 +48,7 @@ function rho!(rho::Matrix,phases,Nphases)
         end
     end
 end
-function rho!(rho::Vector,phases,Nphases)
+function compute_rho!(rho::Vector,phases,Nphases)
     phase_idx = phase_indices(phases,Nphases)
     dN = 1/length(phases)
     for i in phase_idx
@@ -85,13 +85,13 @@ Find covariance function of synaptic input
 
 - `u`: matrix of inputs, rows = neurons, cols = time
 """
-c11(u,lags) = covariance(u,u,lags)
+compute_c11(u,lags) = covariance(u,u,lags)
 
 """
 m13(phases,u,Nphases)
 
 """
-function m13(phases::Vector,u::Vector,Nphases)
+function compute_m13(phases::Vector,u::Vector,Nphases)
     m = zeros(Nphases)
     phase_idx = phase_indices(phases,Nphases)
     for (i,p) in enumerate(phase_idx)
@@ -105,16 +105,16 @@ end
 c13(phases,u,Nphases)
 
 """
-c13(phases,u,Nphases) = m13(phases,u,Nphases) - mean(u)*rho3(phases,Nphases)
+compute_c13(phases,u,Nphases) = compute_m13(phases,u,Nphases) - mean(u)*compute_rho(phases,Nphases)
 
-function c13(phases,u,lags,Nphases)
+function compute_c13(phases,u,lags,Nphases)
     T = size(phases,2) -lags[end]
     c = zeros(Nphases,length(lags))
     a1 = mean(u,dims=1)
     for t in 1:T
-        rho = rho(phases[:,t],Nphases)
+        rho = compute_rho(phases[:,t],Nphases)
         for (ind, lag) in enumerate(lags)
-            c[:,ind] .+= m13(phases[:,t],u[:,t+lag],Nphases) - rho*a1[t+lag]
+            c[:,ind] .+= compute_m13(phases[:,t],u[:,t+lag],Nphases) - rho*a1[t+lag]
         end
     end
     c/T
