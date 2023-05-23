@@ -6,7 +6,6 @@ using PyCall
 using PyPlot
 using LinearAlgebra
 using Random
-using Statistics
 
 export
     plot,
@@ -17,15 +16,20 @@ export
     weights,
     integrate,
     compute_rho,
+    mean_rho,
     compute_c13,
     compute_c33,
-    steady_state
+    steady_state,
+    ftheta,
+    fphase,
+    flif
 
 
 
 include("weights.jl")
 include("integrator.jl")
 include("measures.jl")
+include("2PI.jl")
 
 """
 phaseparams
