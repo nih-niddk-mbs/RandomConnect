@@ -16,7 +16,6 @@ rho(phases::Matrix,Nphases)
 rho(phases::Vector,Nphases)
 
 
-
 """
 
 function compute_rho(phases::Matrix,Nphases,domain=2pi)
