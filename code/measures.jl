@@ -25,13 +25,13 @@ mean_rho(phases::Matrix,Nphases,domain=2pi) = mean(compute_rho(phases,Nphases,do
 function compute_rho(phases::Matrix,Nphases,domain=2pi)
     rho = zeros(Nphases,size(phases,2))
     compute_rho!(rho,phases,Nphases,domain)
-    return rho*Nphases/domain
+    return rho
 end
 
 function compute_rho(phases::Vector,Nphases,domain=2pi)
     rho = zeros(Nphases)
     compute_rho!(rho,phases,Nphases,domain)
-    return rho*Nphases/domain
+    return rho
 end
 """
 rho!(rho,phases,Nphases)
@@ -58,8 +58,6 @@ function compute_rho!(rho::Vector,phases,Nphases,domain)
         rho[i] += dN
     end
 end
-
-
 
 """
 covariance(x,y,lags)
@@ -96,11 +94,12 @@ m13(phases,u,Nphases)
 """
 function compute_m13(phases::Vector,u::Vector,Nphases,domain=2pi)
     m = zeros(Nphases)
+    dN = 1/size(phases,1) * Nphases/domain
     phase_idx = phase_indices(phases,Nphases)
     for (i,p) in enumerate(phase_idx)
-        m[p] += u[i]
+        m[p] += u[i]*dN
     end
-    m/domain
+    m
 end
 """
     c13(phases,u,Nphases)
@@ -124,19 +123,19 @@ function compute_c13(phases,u,lags,Nphases,domain=2pi)
 end
 
 """
-m33(phases,u,Nphases)
+compute_m33(idx1,idx2,Nphases,domain=2pi)
 
 """
 function compute_m33(idx1,idx2,Nphases,domain=2pi)
     c = zeros(Nphases,Nphases)
-    dN =1/length(idx1)
-    for i in 1:Nphases
+    dN = (Nphases/domain)^2/length(idx1)
+    for i in eachindex(idx1)
         c[idx1[i],idx2[i]] += dN
     end
-    c*(Nphases/domain)^2
+    c
 end
 """
-C33(phases,u,lags,Nphases)
+compute_c33(phases,lags,Nphases,domain=2pi)
 
 
 """
