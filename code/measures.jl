@@ -19,16 +19,16 @@ rho(phases::Vector,Nphases)
 
 """
 
-function compute_rho(phases::Matrix,Nphases)
+function compute_rho(phases::Matrix,Nphases,domain=2pi)
     rho = zeros(Nphases,size(phases,2))
     compute_rho!(rho,phases,Nphases)
-    return rho
+    return rho*Nphases/domain
 end
 
-function compute_rho(phases::Vector,Nphases)
+function compute_rho(phases::Vector,Nphases,domain=2pi)
     rho = zeros(Nphases)
     compute_rho!(rho,phases,Nphases)
-    return rho
+    return rho*Nphases/domain
 end
 """
 rho!(rho,phases,Nphases)
@@ -107,7 +107,7 @@ c13(phases,u,Nphases)
 """
 compute_c13(phases,u,Nphases) = compute_m13(phases,u,Nphases) - mean(u)*compute_rho(phases,Nphases)
 
-function compute_c13(phases,u,lags,Nphases)
+function compute_c13(phases,u,lags,Nphases,domain=2pi)
     T = size(phases,2) -lags[end]
     c = zeros(Nphases,length(lags))
     a1 = mean(u,dims=1)
@@ -117,7 +117,7 @@ function compute_c13(phases,u,lags,Nphases)
             c[:,ind] .+= compute_m13(phases[:,t],u[:,t+lag],Nphases) - rho*a1[t+lag]
         end
     end
-    c/T
+    c/T*Nphases/domain
 end
 
 """
@@ -138,7 +138,7 @@ C33(phases,u,lags,Nphases)
 
 """
 
-function c33(phases,lags,Nphases)
+function c33(phases,lags,Nphases,domain=2pi)
     T = size(phases,1) -lags[end]
     c = zeros(Nphases,Nphases,length(lags))
     rho = a3(phases,Nphases)
@@ -148,5 +148,5 @@ function c33(phases,lags,Nphases)
             c[:,:,ind] .+= M33(phase_idx[:,t],phase_idx[:,t+lag],Nphases) .- rho[:,t]*rho[:,t+lag]'
         end
     end
-    c/T
+    c/T*Nphases/domain
 end
