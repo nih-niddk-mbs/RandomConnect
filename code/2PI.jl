@@ -14,14 +14,14 @@ dFu(a,a1,phi,dphi,) = (Fu(phi)*a- Fu(phi-dphi)*a1)/dphi
 
 """
 
-function steadystate_a3(a3,C13,I,sigma,N)
-    sigma2 = sigma^2
+function steadystate_a3(a3,C13,I)
+    N = length(a3)
     dphi = 2pi/N
-    phi = collect(1:N)*dphi .- pi .- .5*dphi 
+    phi = collect(1:N)*dphi .- pi 
     a30 = 1 ./ F.(phi,I)
-    A = sigma2 * Fu.(phi) ./ F.(phi,I) .* C13
+    A = Fu.(phi) ./ F.(phi,I) .* C13
     K = (1 + sum(A)*dphi)/(sum(a30)*dphi)
-    return K * a30 .- A, F.(phi,I) .* a3 + sigma2 * Fu.(phi) .* C13 .- K, a30*sqrt(I)/pi
+    return K * a30 .- A, F.(phi,I) .* a3 + Fu.(phi) .* C13 .- K, a30*sqrt(I)/pi,phi
 end
 function step_a3!(a3,C31,I,sigma2,h,N,dphi)
     for i in 1:N
