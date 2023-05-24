@@ -18,7 +18,7 @@ function integrate(p, W, f, u::Vector, v::Vector, sample_neurons=100)
     dt = p.dt # time step size
     Nsteps = p.Nsteps  # simulation steps
     Ncells = p.Ncells # number of neurons
-    extInput = p.extInput # external input
+    extInput = p.Input # external input
     beta = p.beta # synaptic time
     alpha = p.alpha # auxilliary neuron parameter
 

@@ -42,7 +42,7 @@ struct phaseparams
     Ncells::Int64
     maxrate::Float64
     sigma::Float64
-    extInput::Float64
+    Input::Float64
     threshold::Float64
     reset::Float64
     beta::Float64
@@ -60,14 +60,14 @@ function set_params(;
     Ncells = 10000, # number of neurons in network
     maxrate = 500, # maximum average firing rate.
     sigma = .2, # connection weight std
-    extInput = 0.005,  # external input
+    Input = 0.005,  # external input
     threshold = pi,
     reset = 2pi,
     beta = .1, #40 #synaptic drive decay rate
     alpha = .5 # extra parameter
     )
 
-    phaseparams(dt,Nsteps,Ncells,maxrate,sigma,extInput,threshold,reset,beta,alpha)
+    phaseparams(dt,Nsteps,Ncells,maxrate,sigma,Input,threshold,reset,beta,alpha)
 
 end
 
