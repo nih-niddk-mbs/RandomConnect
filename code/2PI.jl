@@ -14,14 +14,13 @@ dFu(a,a1,phi,dphi,) = (Fu(phi)*a- Fu(phi-dphi)*a1)/dphi
 
 """
 
-function steadystate_a3(a3,C13,I)
-    N = length(a3)
+function steadystate_a3(a3,C13,I,N)
     dphi = 2pi/N
-    phi = collect(1:N)*dphi .- pi 
+    phi = collect(1:N)*dphi .- pi .- .5*dphi 
     a30 = 1 ./ F.(phi,I)
     A = Fu.(phi) ./ F.(phi,I) .* C13
     K = (1 + sum(A)*dphi)/(sum(a30)*dphi)
-    return K * a30 .- A, F.(phi,I) .* a3 + Fu.(phi) .* C13 .- K, a30*sqrt(I)/pi,phi
+    return K * a30 .- A, F.(phi,I) .* a3 + Fu.(phi) .* C13 .- K, a30*sqrt(I)/pi
 end
 function step_a3!(a3,C31,I,sigma2,h,N,dphi)
     for i in 1:N
@@ -43,6 +42,16 @@ function step_C31!(C31,D31,beta,h,N,dphi)
         phi = mod2pi(i*dphi)
         i1 = i == 1 ? N : i - 1
         C31[i] -= h*(beta*C31 - beta2*D31)
+    end
+end
+
+
+function step_C33tau!(C33,C11,a3,I,h,N,dphi)
+    for i in 1:N
+        for j in 1:i
+         phi = mod2pi(i*dphi)
+        i1 = i == 1 ? N : i - 1
+        C33[i] -= h*(dF(C33[i],C33[i1],I,phi,dphi) + dFu(a3[i],a3[i1],phi,dphi)*C31)
     end
 end
 
