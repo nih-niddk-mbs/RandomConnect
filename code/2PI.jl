@@ -4,8 +4,8 @@ G(phi,nu) = 2*(1+cos(phi))/nu
 F(phi,I) = 1-cos(phi) + I*(1+cos(phi))
 Fu(phi) = 1+cos(phi)
 
-dF(a,a1,I,phi,dphi,) = (F(phi,I)*a - F(phi-dphi,I)*a1)/dphi
-dFu(a,a1,phi,dphi,) = (Fu(phi)*a- Fu(phi-dphi)*a1)/dphi
+dF(a,a1,I,phi,phi1,dphi) = (F(phi,I)*a - F(phi1,I)*a1)/dphi
+dFu(a,a1,phi,phi1,dphi) = (Fu(phi)*a - Fu(phi1)*a1)/dphi
 
 
 """
@@ -24,9 +24,8 @@ function steadystate_a3(a3,C13,I,N)
 end
 function step_a3!(a3,C31,I,sigma2,h,N,dphi)
     for i in 1:N
-        phi = mod2pi(i*dphi)
         i1 = i == 1 ? N : i - 1
-        a3[i] -= h*(dF(a3[i],a3[i1],I,phi,dphi) - sigma2*dFu(C31[i],C31[i1],phi,dphi))
+        a3[i] -= h*(dF(a3[i],a3[i1],I,phi[i],phi[i1],dphi) - sigma2*dFu(C31[i],C31[i1],phi[i],phi[i1],dphi))
     end
 end
 
@@ -36,6 +35,16 @@ function step_a3!(a3,C31,I,sigma2,h,N,dphi,T)
     end
 end
 
+
+
+
+
+
+"""
+    step_C31!(C31,D31,beta,h,N,dphi,T)
+
+TBW
+"""
 function step_C31!(C31,D31,beta,h,N,dphi)
     beta2 = beta^2
     for i in 1:N
@@ -44,22 +53,6 @@ function step_C31!(C31,D31,beta,h,N,dphi)
         C31[i] -= h*(beta*C31 - beta2*D31)
     end
 end
-
-
-function step_C33tau!(C33,C11,a3,I,h,N,dphi)
-    for i in 1:N
-        for j in 1:i
-         phi = mod2pi(i*dphi)
-        i1 = i == 1 ? N : i - 1
-        C33[i] -= h*(dF(C33[i],C33[i1],I,phi,dphi) + dFu(a3[i],a3[i1],phi,dphi)*C31)
-    end
-end
-
-"""
-    step_C31!(C31,D31,beta,h,N,dphi,T)
-
-TBW
-"""
 function step_C31!(C31,D31,beta,h,N,dphi,T)
     for t in 1:T
         step_C31!(C31,D31,beta,h,N,dphi)
@@ -80,7 +73,7 @@ function step_C31tt!(C31,a3,C11,D31,I,beta,h,N,dphi)
     for i in 1:N
         phi = mod2pi(i*dphi)
         i1 = i == 1 ? N : i - 1
-        C31[i] -= h*(beta*C31[i] - beta^2*D31[i] + dF(C31[i],C31[i1],I,phi,dphi) + dFu(a3[i],a3[i1],phi,dphi)*C11)
+        C31[i] -= h*(beta*C31[i] - beta^2*D31[i] + dF(C31[i],C31[i1],I,phi[i],phi[i1],dphi) + dFu(a3[i],a3[i1],phi[i],phi[i1],dphi)*C11)
     end
 end
 function update_D31(Q,C32,lag)
@@ -111,6 +104,22 @@ function step_C32(a3,I,beta,h,N,dphi,T)
         step_C32!(C32c,a3,I,t*h,beta,h,N,dphi)
     end
     return C32
+end
+
+
+function step_D33tau!(C33,C11,a3,I,h,N,dphi)
+        i1 = i == 1 ? N : i - 1
+        C33[i] -= h*(dF(C33[i],C33[i1],I,phi[i],phi[i1],dphi) + dFu(a3[i],a3[i1],phi[i],phi[i1],dphi)*C31)
+    end
+end
+
+function step_D33tau!(C33,C11,a3,I,h,N,dphi)
+    for i in 1:N
+        for j in 1:i
+         phi = mod2pi(i*dphi)
+        i1 = i == 1 ? N : i - 1
+        C33[i] -= h*(dF(C33[i],C33[i1],I,phi,dphi) + dFu(a3[i],a3[i1],phi,dphi)*C31)
+    end
 end
 
 
