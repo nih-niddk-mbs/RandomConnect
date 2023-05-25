@@ -13,19 +13,24 @@ transform_inv(v,I) =2*atan(tan(v/2)/sqrt(I))
 function transform_a3(a3,phi,I)
     N = length(a3)
     at = similar(a3)
-    for (i,a) in enumerate(a3)
-        ia = phase_index(transform_inv(phi[i],I),N)
-        at[ia] = a
+    for i in eachindex(at)
+        p = transform(phi[i],I)
+        idx = phase_index(p,N)
+        at[i] = a3[idx-1] + a3[idx] + a3[idx+1]
     end
+    return at
 end
 
-
+jacobian(phi,I) = 2*sqrt(I)/(1+cos(phi) +I*(1-cos(phi)))
 
 """
     step_a3!(a3,C31,I,sigma2,h,N,phi,dphi)
 
 
 """
+
+steadystate_a30(I,phi) = sqrt(I)/pi./ F.(phi,I)
+
 
 function steadystate_a3(a3,C13,I,N)
     dphi = 2pi/N
@@ -312,7 +317,6 @@ end
 function step_D33tau!(C33,C11,a3,I,h,N,dphi)
         i1 = i == 1 ? N : i - 1
         C33[i] -= h*(dF(C33[i],C33[i1],I,phi[i],phi[i1],dphi) + dFu(a3[i],a3[i1],phi[i],phi[i1],dphi)*C31)
-    end
 end
 
 function step_D33tau!(C33,C11,a3,I,h,N,dphi)
@@ -320,7 +324,8 @@ function step_D33tau!(C33,C11,a3,I,h,N,dphi)
         for j in 1:i
          phi = mod2pi(i*dphi)
         i1 = i == 1 ? N : i - 1
-        C33[i] -= h*(dF(C33[i],C33[i1],I,phi,dphi) + dFu(a3[i],a3[i1],phi,dphi)*C31)
+        C33[i,j] -= h*(dF(C33[i,j],C33[i1,j],I,phi,dphi) + dFu(a3[i],a3[i1],phi,dphi)*C11)
+        end
     end
 end
 
