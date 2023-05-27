@@ -11,7 +11,10 @@ dFu(a,a1,phi,phi1,dphi) = (Fu(phi)*a - Fu(phi1)*a1)/dphi
 transform(phi,I) =2*atan(sqrt(I)*tan(phi/2))
 transform_inv(v,I) =2*atan(tan(v/2)/sqrt(I))
 
-dFa(a3,phi)
+function dFa(a3,phi)
+
+
+end
 
 function transform_a3(a3,phi,I)
     N = length(a3)
