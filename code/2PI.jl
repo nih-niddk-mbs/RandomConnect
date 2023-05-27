@@ -11,11 +11,6 @@ dFu(a,a1,phi,phi1,dphi) = (Fu(phi)*a - Fu(phi1)*a1)/dphi
 transform(phi,I) =2*atan(sqrt(I)*tan(phi/2))
 transform_inv(v,I) =2*atan(tan(v/2)/sqrt(I))
 
-function dFa(a3,phi)
-
-
-end
-
 function transform_a3(a3,phi,I)
     N = length(a3)
     dphi = 2pi/N
@@ -322,12 +317,13 @@ function step_C32(a3,I,beta,h,N,dphi,T)
 end
 
 
-function step_D33tau!(C33,C11,a3,I,h,N,dphi)
+function step_D33!(C33,D33,phi,I,h,N,dphi)
+    dphi = 
         i1 = i == 1 ? N : i - 1
-        C33[i] -= h*(dF(C33[i],C33[i1],I,phi[i],phi[i1],dphi) + dFu(a3[i],a3[i1],phi[i],phi[i1],dphi)*C31)
+        C33[i,j] -= h*(D33[i,j] + dF(C33[i,j],C33[i1,j],I,phi[i],phi[i1],dphi))
 end
 
-function step_D33tau!(C33,C11,a3,I,h,N,dphi)
+function step_C33!(C33,C11,a3,I,h,N,dphi)
     for i in 1:N
         for j in 1:i
          phi = mod2pi(i*dphi)
