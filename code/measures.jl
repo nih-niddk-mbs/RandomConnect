@@ -8,7 +8,7 @@ phase_indices(phase,Nphases,u,l)
 Assign index on domain 1 to Nphases to phase on domain l to u
 
 """
-phase_index(phase,Nphases,lower=-pi,upper=pi) = max(round(Int,(phase - lower)/(upper-lower)*Nphases),1)
+phase_index(phase,Nphases,lower=-pi,upper=pi) = max(ceil(Int,(phase - lower)/(upper-lower)*Nphases),1)
 phase_indices(phases,Nphases,lower=-pi,upper=pi) = max.(ceil.(Int,(phases .- lower)/(upper-lower)*Nphases),1)
 
 

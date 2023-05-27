@@ -3,6 +3,7 @@
 G(phi,nu) = 2*(1+cos(phi))/nu
 F(phi,I) = 1-cos(phi) + I*(1+cos(phi))
 Fu(phi) = 1+cos(phi)
+Fprime(phi,I) = (1-I)*I*cos(phi)/(1+cos(phi) + I*cos(phi))
 
 dF(a,a1,I,phi,phi1,dphi) = (F(phi,I)*a - F(phi1,I)*a1)/dphi
 dFu(a,a1,phi,phi1,dphi) = (Fu(phi)*a - Fu(phi1)*a1)/dphi
@@ -10,15 +11,19 @@ dFu(a,a1,phi,phi1,dphi) = (Fu(phi)*a - Fu(phi1)*a1)/dphi
 transform(phi,I) =2*atan(sqrt(I)*tan(phi/2))
 transform_inv(v,I) =2*atan(tan(v/2)/sqrt(I))
 
+dFa(a3,phi)
+
 function transform_a3(a3,phi,I)
     N = length(a3)
+    dphi = 2pi/N
     at = similar(a3)
     for i in eachindex(at)
         p = transform(phi[i],I)
         idx = phase_index(p,N)
-        at[i] = a3[idx-1] + a3[idx] + a3[idx+1]
+        dp = phi[idx] - p
+        at[i] = ((dphi-dp)*a3[idx] + dp*a3[idx-1])/dphi
     end
-    return at
+    return at .* jacobian.(phi,I)
 end
 
 jacobian(phi,I) = 2*sqrt(I)/(1+cos(phi) +I*(1-cos(phi)))
