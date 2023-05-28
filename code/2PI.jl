@@ -364,6 +364,22 @@ function index_sym(i,N)
     i1,i2
 end
 
+function advect!(a,h,T)
+    for t in 1:T
+        advect!(a,h)
+    end
+end
+
+function advect!(a,h)
+    N = length(a)
+    dphi = 2pi/N
+    phi = phases(N)
+    for i in 1:N
+        i1 = i == 1 ? N : i - 1
+        a[i] -= h*(dF(a[i],a[i1],I,phi[i],phi[i1],dphi))
+    end
+end
+
 function make_dFadFa(a3,phi,N)
     dphi = 2pi/N
     dFadFa = zeros(N,N)
