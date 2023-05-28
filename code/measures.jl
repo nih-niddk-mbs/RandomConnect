@@ -19,8 +19,6 @@ rho(phases::Vector,Nphases)
 
 """
 
-phase_domain(Nphases,domain) = collect(1:Nphases) * domain/Nphases
-
 mean_a3(phases::Matrix,Nphases,domain=2pi) = mean(compute_a3(phases,Nphases,domain),dims=2)
 
 function compute_a3(phases::Matrix,Nphases,domain=2pi)
