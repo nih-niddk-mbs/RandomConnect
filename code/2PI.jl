@@ -11,17 +11,17 @@ dFu(a,a1,phi,phi1,dphi) = (Fu(phi)*a - Fu(phi1)*a1)/dphi
 transform(phi,I) =2*atan(sqrt(I)*tan(phi/2))
 transform_inv(v,I) =2*atan(tan(v/2)/sqrt(I))
 
-function transform_a3(a3,phi,I)
-    N = length(a3)
+function transform(a,phi,I)
+    N = length(a)
     dphi = 2pi/N
-    at = similar(a3)
-    for i in eachindex(at)
+    at = similar(a)
+    for i in eachindex(at)I 
         p = transform(phi[i],I)
         idx = phase_index(p,N)
         dp = phi[idx] - p
-        at[i] = ((dphi-dp)*a3[idx] + dp*a3[idx-1])/dphi
+        at[i] = ((dphi-dp)*a[idx] + dp*a[idx-1])/dphi
     end
-    return at .* jacobian.(phi,I)
+    return at
 end
 
 jacobian(phi,I) = 2*sqrt(I)/(1+cos(phi) +I*(1-cos(phi)))
@@ -56,25 +56,25 @@ function step_a3!(a3,C31,I,sigma2,h,N,dphi,T)
     end
 end
 
-# function step_1s(a3,C11,D11,C31,D31,C33,D33,t,sigma2,nu,h,N,dphi,indpi)
-#     D11 += h*(nu^2*beta2*sigma2*C33[indpi,indpi] - beta*D11)
-#     C11 += h*(D11 - beta*C11)
-#     for indchi in 1:N
-#         phi = mod2pi(indchi*dphi + nu*t)
-#         indphi = floor(Int,phi/dphi)
-#         indphi = indphi == 0 ? N : indphi
-#         indphi1 = indphi == 1 ? N : indphi - 1
-#         dGa3 = (G(phi,nu)*a3[indphi] - G(phi-dphi,nu)*a3[indphi1])/dphi
-#         D31[indchi] -= h*dGa3*D11
-#         C31[indchi] += h*(D31[indchi] - beta*C31[indchi])
-#         for indchip in 1:N
-#             chip = mod2pi(indchip*dphi)
-#             indchip1 = indchip == 1 ? N : indchip - 1
-#             D33[indchi,indchip] += h*dGa3*(G(chip,nu)*a3[indchip] - G(chip-dphi,nu)*a3[indchip1])/dphi*C11
-#         end
-#     end
-#     return C11,D11,C31,D31,.5*(D33+D33')
-# end
+function step_1s(a3,C11,D11,C33,D33,t,sigma2,nu,h,N,dphi,indpi)
+    D11 += h*(nu^2*beta2*sigma2*C33[indpi,indpi] - beta*D11)
+    C11 += h*(D11 - beta*C11)
+    for indchi in 1:N
+        phi = mod2pi(indchi*dphi + nu*t)
+        indphi = floor(Int,phi/dphi)
+        indphi = indphi == 0 ? N : indphi
+        indphi1 = indphi == 1 ? N : indphi - 1
+        dGa3 = (G(phi,nu)*a3[indphi] - G(phi-dphi,nu)*a3[indphi1])/dphi
+        D31[indchi] -= h*dGa3*D11
+        C31[indchi] += h*(D31[indchi] - beta*C31[indchi])
+        for indchip in 1:N
+            chip = mod2pi(indchip*dphi)
+            indchip1 = indchip == 1 ? N : indchip - 1
+            D33[indchi,indchip] += h*dGa3*(G(chip,nu)*a3[indchip] - G(chip-dphi,nu)*a3[indchip1])/dphi*C11
+        end
+    end
+    return C11,D11,C31,D31,.5*(D33+D33')
+end
 # function step_2s(a3,C11,D11,C31,D31,C33,D33,t,sigma2,nu,h,N,dphi,indpi)
 
 #     for indchi in 1:N
@@ -387,7 +387,7 @@ function make_dFadFa(a3,phi,N)
         for j in 1:N
             i1,i2 = index_sym(i,N)
             j1,j2 = index_sym(j,N)
-            dFadFa[i,j]=dFu(a3[i1],a3[i2],phi[i1],phi[i2],dphi)*dFu(a3[j1],a3[j2],phi[j1],phi[j2],dphi)
+            dFadFa[i,j]=dFu(a3[i1],a3[i2],phi[i1],phi[i2],2*dphi)*dFu(a3[j1],a3[j2],phi[j1],phi[j2],2*dphi)
         end
     end  
     return dFadFa
@@ -397,28 +397,33 @@ phases(Nphases,domain=2pi) = collect(1:Nphases) * domain/Nphases
 
 function step_C33!(C33,D33,I,h,N,phi,dphi)
     for i in 1:N
-        for j in 1:i
-            i1, j1 = indexr(i,j,N)
-            C33[i,j] += h*(D33[i,j] - dF(C33[i,j],C33[i1,j1],I,phi[i],phi[i1],dphi))
+        for j in 1:N
+            # i1, j1 = indexr(i,j,N)
+            # i1 = i == 1 ? N : i - 1
+            i1,i2 = index_sym(i,N)
+            C33[i,j] += h*(D33[i,j] - dF(C33[i1,j],C33[i2,j],I,phi[i1],phi[i2],2*dphi))
         end
     end
 end
 
 function step_D33!(D33,C11,dFadFa,I,h,N,phi,dphi)
     for i in 1:N
-        for j in 1:i
-            i1,j1 = indexl(i,j,N)
-            D33[i,j] += h*(dF(D33[i,j],D33[i1,j1],I,phi[j],phi[j1],dphi) - dFadFa[i,j]*C11)
+        for j in 1:N
+            # i1,j1 = indexl(i,j,N)
+            # j1 = j == N ? 1 : j + 1
+            j1,j2 = index_sym(j,N)
+            D33[i,j] += h*(dF(D33[i,j1],D33[i,j2],I,phi[1],phi[j2],2*dphi) - dFadFa[i,j]*C11)
         end
     end
 end
 
-function evolve_C33(C33,C11,a3,I,h,N,T,lag=1)
+function evolve_C33(C33in,D33in,C11,a3,I,h,N,T,lag=1)
+    C33 = copy(C33in)
     dphi = 2pi/N
     phi = phases(N)
     dFadFa = make_dFadFa(a3,phi,N)
     # C33 = diagm(a_3)/dphi - a_3*a_3'
-    D33 = zeros(N,N)
+    D33 = copy(D33in)
     C33tot = zeros(N,N,T+1)
     C33tot[:,:,1] = C33
     k = 2
