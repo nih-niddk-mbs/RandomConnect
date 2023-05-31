@@ -6,6 +6,7 @@ using PyCall
 using PyPlot
 using LinearAlgebra
 using Random
+using Smoothers
 
 export
     plot,

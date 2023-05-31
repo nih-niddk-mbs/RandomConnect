@@ -1,28 +1,108 @@
 ### 2PI.jl
 
-
+# Functions for theta neuron, v= original coordinates
 Fv(v,I) = 1-cos(v) + I*(1+cos(v))
 Fvu(v) = 1+cos(v)
 Fprime(phi,I) = (1-I)*I*cos(phi)/(1+cos(phi) + I*cos(phi))
 F(phi,I) = 4I/(1+cos(phi) + I*(1-cos(phi)))
 Fu(phi) = 2*(1+cos(phi))/(1+cos(phi) +I*(1-cos(phi)))
 
+# flux derivatives for 2PI equations
 dF(a,a1,I,phi,phi1,dphi) = (F(phi,I)*a - F(phi1,I)*a1)/dphi
 dFu(a,a1,phi,phi1,dphi) = (Fu(phi)*a - Fu(phi1)*a1)/dphi
 dFvu(a,a1,v,v1,dphi) = (Fvu(v)*a - Fvu(v1)*a1)/dphi
 
+"""
+make_phases(N,domain=2pi) = collect(1:N) * domain/N .- .5*domain
+
+Make vector of phases of length N on domain -domain/2 to domain/2
+
+"""
+make_phases(N,domain=2pi) = collect(1:N) * domain/N .- .5*domain
+
+"""
+phase_set(a,domain=2pi)
+phase_set(N::Int,domain=2pi)
+
+"""
+
+phase_set(a,domain=2pi) = phase_set(size(a,1),domain)
+
+function phase_set(N::Int,domain=2pi)
+    phi = make_phases(N,domain)
+    dphi = domain/N
+    return phi,dphi,N
+end
+
+
+function indexr(i,j,N)
+    if i == j
+        if i == 1
+            i1 = N
+            j1 = j
+        else
+            i1 = i
+            j1 = j-1
+        end
+    else
+        i1 = i - 1
+        j1 = j
+    end
+    i1,j1
+end
+
+function indexl(i,j,N)
+    if j == i
+        if j == N
+            i1 = i
+            j1 = 1
+        else
+            i1 = i+1
+            j1 = j
+        end
+    else
+        i1 = i
+        j1 = j + 1
+    end
+    i1,j1
+end
+
+function index_sym(i,N)
+    if i == 1
+        i1 = i + 1
+        im1 = N
+    else
+        if i == N
+            i1 = 1
+        else
+            i1 = i + 1
+        end
+        im1 = i - 1
+    end
+    i1,im1
+end
+
+
+"""
+transform(phi::Float64,I) = 2*atan(sqrt(I)*tan(phi/2))
+transform_inv(v::Float64,I) =2*atan(tan(v/2)/sqrt(I))
+
+Transform to characteristic coordinates and inverse (i.e. from v to phi and back)
+"""
 transform(phi::Float64,I) = 2*atan(sqrt(I)*tan(phi/2)) 
 transform_inv(v::Float64,I) =2*atan(tan(v/2)/sqrt(I))
 
-function transform(a::Vector,phi,I,f=transform)
+function transform(a::Vector,I,f=transform)
     N = length(a)
     dphi = 2pi/N
+    phi = make_phases(N)
     at = similar(a)
     for i in 1:N
         x = f(phi[i],I)
         ix = phase_index(x,N)
-        dp = phi[idx] - p
-        at[i] = ((dphi-dp)*a[idx] + dp*a[ix-1])/dphi
+        ix1 = ix == 1 ? N : ix - 1
+        dp = phi[ix] - x
+        at[i] = ((dphi-dp)*a[ix] + dp*a[ix1])/dphi
     end
     return at
 end
@@ -68,22 +148,45 @@ end
 
 jacobian(phi,I) = 2*sqrt(I)/(1+cos(phi) +I*(1-cos(phi)))
 
-function make_dFadFa(a3,phi,N)
+function make_dFa(a3,df=dFu)
+    phi,dphi,N = phase_set(a3)
+    dFa = zeros(N)
+    for i in 1:N
+        i1,im1 = index_sym(i,N)
+        dFa[i]=df(a3[i1],a3[im1],phi[i1],phi[im1],2*dphi)
+    end
+    return dFa
+end
+
+function make_dFadFa(a3,phi,N,df=dFu)
     dphi = 2pi/N
     dFadFa = zeros(N,N)
     for i in 1:N
         for j in 1:N
             i1,i2 = index_sym(i,N)
             j1,j2 = index_sym(j,N)
-            dFadFa[i,j]=dFu(a3[i1],a3[i2],phi[i1],phi[i2],2*dphi)*dFu(a3[j1],a3[j2],phi[j1],phi[j2],2*dphi)
+            dFadFa[i,j]=df(a3[i1],a3[i2],phi[i1],phi[i2],2*dphi)*df(a3[j1],a3[j2],phi[j1],phi[j2],2*dphi)
         end
     end  
     return dFadFa
 end
-    
-make_phases(N,domain=2pi) = collect(1:N) * domain/N .- .5*domain
 
-steadystate_a30(I,phi) = sqrt(I)/pi./ F.(phi,I)
+
+"""
+smooth_a3(v::Matrix,N,Input)
+
+Create phi transformed and smoothed a3 from simulation phase data (using moving average smoothing)
+
+"""
+function smooth_a3(v::Matrix,N,Input)
+    a3 = mean_a3(v,N+9)
+    a3phi = transform(a3,Input)
+    sma(a3phi,10)
+end
+
+    
+
+steadystate_a30(I,phi,f) = sqrt(I)/pi./ f.(phi,I)
 
 
 function steadystate_a3(a3,C13,I,N)
@@ -135,9 +238,17 @@ function step_C33!(C33,D33,nu,h,N,phi)
     end
 end
 
-function evolve_C33(C11,a3,Input,N,T,lag=1)
-    phi = make_phases(N)
-    dphi = 2pi/N
+function stepC11!(C11,D11)
+
+end
+
+function stepD11!()
+
+end
+
+
+function evolve_C33(C11,a3,Input,T,lag=1)
+    phi,dphi,N = phase_set(a3)
     dFadFa = make_dFadFa(a3,phi,N)
     nu = 2*sqrt(Input)
     C33 = diagm(a3)/dphi - a3*a3'
@@ -417,52 +528,6 @@ TBW
 #     return C32
 # end
 
-function indexr(i,j,N)
-    if i == j
-        if i == 1
-            i1 = N
-            j1 = j
-        else
-            i1 = i
-            j1 = j-1
-        end
-    else
-        i1 = i - 1
-        j1 = j
-    end
-    i1,j1
-end
-
-function indexl(i,j,N)
-    if j == i
-        if j == N
-            i1 = i
-            j1 = 1
-        else
-            i1 = i+1
-            j1 = j
-        end
-    else
-        i1 = i
-        j1 = j + 1
-    end
-    i1,j1
-end
-
-function index_sym(i,N)
-    if i == 1
-        i1 = i + 1
-        i2 = N
-    else
-        if i == N
-            i1 = 1
-        else
-            i1 = i + 1
-        end
-        i2 = i - 1
-    end
-    i1,i2
-end
 
 function advect!(a,h,T)
     for t in 1:T

@@ -19,7 +19,7 @@ rho(phases::Vector,Nphases)
 
 """
 
-mean_a3(phases::Matrix,Nphases,domain=2pi) = mean(compute_a3(phases,Nphases,domain),dims=2)
+mean_a3(phases::Matrix,Nphases,domain=2pi) = mean(compute_a3(phases,Nphases,domain),dims=2)[:,1]
 
 function compute_a3(phases::Matrix,Nphases,domain=2pi)
     rho = zeros(Nphases,size(phases,2))
