@@ -2,12 +2,14 @@
 
 
 Fv(v,I) = 1-cos(v) + I*(1+cos(v))
-Fu(phi) = 1+cos(phi)
+Fvu(v) = 1+cos(v)
 Fprime(phi,I) = (1-I)*I*cos(phi)/(1+cos(phi) + I*cos(phi))
 F(phi,I) = 4I/(1+cos(phi) + I*(1-cos(phi)))
+Fu(phi) = 2*(1+cos(phi))/(1+cos(phi) +I*(1-cos(phi)))
 
 dF(a,a1,I,phi,phi1,dphi) = (F(phi,I)*a - F(phi1,I)*a1)/dphi
 dFu(a,a1,phi,phi1,dphi) = (Fu(phi)*a - Fu(phi1)*a1)/dphi
+dFvu(a,a1,v,v1,dphi) = (Fvu(v)*a - Fvu(v1)*a1)/dphi
 
 transform(phi::Float64,I) = 2*atan(sqrt(I)*tan(phi/2)) 
 transform_inv(v::Float64,I) =2*atan(tan(v/2)/sqrt(I))
@@ -17,10 +19,10 @@ function transform(a::Vector,phi,I,f=transform)
     dphi = 2pi/N
     at = similar(a)
     for i in 1:N
-        p = f(phi[i],I)
-        idx = phase_index(p,N)
+        x = f(phi[i],I)
+        ix = phase_index(x,N)
         dp = phi[idx] - p
-        at[i] = ((dphi-dp)*a[idx] + dp*a[idx-1])/dphi
+        at[i] = ((dphi-dp)*a[idx] + dp*a[ix-1])/dphi
     end
     return at
 end
