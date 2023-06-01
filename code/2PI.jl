@@ -1,11 +1,12 @@
 ### 2PI.jl
 
 # Functions for theta neuron, v= original coordinates
-Fv(v,I) = 1-cos(v) + I*(1+cos(v))
-Fvu(v) = 1+cos(v)
-Fprime(phi,I) = (1-I)*I*cos(phi)/(1+cos(phi) + I*cos(phi))
-F(phi,I) = 4I/(1+cos(phi) + I*(1-cos(phi)))
-Fu(phi) = 2*(1+cos(phi))/(1+cos(phi) +I*(1-cos(phi)))
+F(v,I) = 1-cos(v) + I*(1+cos(v))
+Fu(v) = 1+cos(v)
+Fv(v,I) = (1-I)*sin(v) 
+F_phi(phi,I) = 4I/(1+cos(phi) + I*(1-cos(phi)))
+Fu_phi(phi) = 2*(1+cos(phi))/(1+cos(phi) +I*(1-cos(phi)))
+Fv_phi(phi,I) = (1-I)*I*sin(phi)/(1+cos(phi) + I*(1-cos(phi)))
 
 # flux derivatives for 2PI equations
 dF(a,a1,I,phi,phi1,dphi) = (F(phi,I)*a - F(phi1,I)*a1)/dphi
@@ -222,18 +223,16 @@ function step_D33!(D33,C11,dFadFa,nu,h,N,phi)
     for i in 1:N
         for j in 1:N
             jp = j == N ? 1 : j + 1
-            jn = j == 1 ? N : j - 1
-            D33[i,j] = -h*dFadFa[i,jp]*C11 + D33[i,jp]*exp((F(phi[jn],I)-F(phi[j],I))/nu)
+            D33[i,j] = -h*dFadFa[i,jp]*C11 + D33[i,jp]*exp((F_phi(phi[jp],I)-F_phi(phi[j],I))/nu)
         end
     end
 end
 
 function step_C33!(C33,D33,nu,h,N,phi)
     for i in N:-1:1
-        ip = i == N ? 1 : i + 1
         in = i == 1 ? N : i - 1
         for j in 1:N
-            C33[i,j] = h*D33[i,j] + C33[in,j]*exp((F(phi[ip],I)-F(phi[i],I))/nu)
+            C33[i,j] = h*D33[i,j] + C33[in,j]*exp((F_phi(phi[in],I)-F_phi(phi[i],I))/nu)
         end
     end
 end
@@ -256,16 +255,19 @@ function evolve_C33(C11,a3,Input,T,lag=1)
     h = 2pi/N/nu
     k = 1
     C33tot = zeros(N,N,T+1)
+    D33tot = zeros(N,N,T+1)
     C33tot[:,:,k] = C33
+    D33tot[:,:,k] = D33
     for t in 1:T
         step_D33!(D33,C11[t],dFadFa,nu,h,N,phi)
         step_C33!(C33,D33,nu,h,N,phi)
         if mod(t,lag) == 0
             k += 1
             C33tot[:,:,k] = C33
+            D33tot[:,:,k] = D33
         end
     end
-    return C33tot,C33,D33
+    return C33tot,D33tot,C33,D33
 end
 
 # function step_1s(a3,C11,D11,C33,D33,t,sigma2,nu,h,N,dphi,indpi)
