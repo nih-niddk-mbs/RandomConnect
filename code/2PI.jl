@@ -185,7 +185,33 @@ function smooth_a3(v::Matrix,N,Input)
     sma(a3phi,10)
 end
 
-    
+function smooth_C33(v::Matrix,N,Input)
+    phi = make_phases(N)
+    C33 = compute_C33(v,collect(1:2),N)
+    for i in 1:2
+        C33[:,:,i] = transform(C33[:,:,i],phi,Input)
+    end
+    return C33,phi
+end
+function compute_D33(C33,Input)
+    phi,_,N = phase_set(C33)
+    D33 = Matrix{Float64}(undef,N,N)
+    for i in 1:N, j in 1:N
+        ip = i == N ? 1 : i + 1
+        D33[i,j] = C33[ip,j,2] - C33[i,j,1]*exp((F_phi(phi[ip],Input)-F_phi(phi[i],Input))/2/sqrt(Input))
+    end
+    return D33*N*sqrt(Input)/pi
+end
+
+function compute_D33a(C33,Input)
+    phi,_,N = phase_set(C33)
+    D33 = Matrix{Float64}(undef,N,N)
+    for i in 1:N, j in 1:N
+        ip = i == N ? 1 : i + 1
+        D33[i,j] = (C33[i,j,2] - C33[i,j,1] + 2*sqrt(Input)*(C33[ip,j,1] - C33[i,j,1]))*N*sqrt(Input)/pi + Fv_phi(phi[i],Input)*C33[i,j,1]
+    end
+    return D33 
+end
 
 steadystate_a30(I,phi,f) = sqrt(I)/pi./ f.(phi,I)
 
@@ -219,16 +245,18 @@ function step_a3!(a3,C31,I,sigma2,h,N,dphi,T)
     end
 end
 
-function step_D33!(D33,C11,dFadFa,nu,h,N,phi)
+function step_D33!(D33,C11,dFadFa,Input,h,N,phi)
+    nu = 2*sqrt(Input)
     for i in 1:N
         for j in 1:N
             jp = j == N ? 1 : j + 1
-            D33[i,j] = -h*dFadFa[i,jp]*C11 + D33[i,jp]*exp((F_phi(phi[jp],I)-F_phi(phi[j],I))/nu)
+            D33[i,j] = -h*dFadFa[i,jp]*exp((F_phi(phi[jp],I)-F_phi(phi[j],Input))/nu)*C11 + D33[i,jp]*exp((F_phi(phi[jp],Input)-F_phi(phi[j],Input))/nu)
         end
     end
 end
 
-function step_C33!(C33,D33,nu,h,N,phi)
+function step_C33!(C33,D33,Input,h,N,phi)
+    nu = 2*sqrt(Input)
     for i in N:-1:1
         in = i == 1 ? N : i - 1
         for j in 1:N
@@ -237,13 +265,10 @@ function step_C33!(C33,D33,nu,h,N,phi)
     end
 end
 
-function stepC11!(C11,D11)
+step_C11(C11,D11,h) = C11+h*D11
 
-end
+step_D11(D11,C11,C33,h,beta2,sig2) = D11 + h*beta2*(C11 - 4*sig2*C33)
 
-function stepD11!()
-
-end
 
 
 function evolve_C33(C11,a3,Input,T,lag=1)
@@ -259,8 +284,8 @@ function evolve_C33(C11,a3,Input,T,lag=1)
     C33tot[:,:,k] = C33
     D33tot[:,:,k] = D33
     for t in 1:T
-        step_D33!(D33,C11[t],dFadFa,nu,h,N,phi)
-        step_C33!(C33,D33,nu,h,N,phi)
+        step_D33!(D33,C11[t],dFadFa,Input,h,N,phi)
+        step_C33!(C33,D33,Input,h,N,phi)
         if mod(t,lag) == 0
             k += 1
             C33tot[:,:,k] = C33
@@ -268,6 +293,39 @@ function evolve_C33(C11,a3,Input,T,lag=1)
         end
     end
     return C33tot,D33tot,C33,D33
+end
+
+function evolve(C11,a3,p,T,lag=1)
+    Input = p.Input
+    sig2 = p.sigma^2
+    beta2 = p.beta^2
+    phi,dphi,N = phase_set(a3)
+    dFadFa = make_dFadFa(a3,phi,N)
+    nu = 2*sqrt(Input)
+    C33 = diagm(a3)/dphi - a3*a3'
+    D33 = zeros(N,N)
+    h = 2pi/N/nu
+    k = 1
+    D11 = 0
+    C11tot = zeros(T+1)
+    C33tot = zeros(N,N,T+1)
+    D33tot = zeros(N,N,T+1)
+    C33tot[:,:,k] = C33
+    D33tot[:,:,k] = D33
+    C11tot[k] = C11
+    for t in 1:T
+        D11 = step_D11(D11,C11,C33[end,end],h,beta2,sig2)
+        C11 = step_C11(C11,D11,h)
+        step_D33!(D33,C11,dFadFa,Input,h,N,phi)
+        step_C33!(C33,D33,Input,h,N,phi)
+        if mod(t,lag) == 0
+            k += 1
+            C33tot[:,:,k] = C33
+            D33tot[:,:,k] = D33
+            C11tot[k] = C11
+        end
+    end
+    return C33tot,D33tot,C11tot,C33,D33,C11
 end
 
 # function step_1s(a3,C11,D11,C33,D33,t,sigma2,nu,h,N,dphi,indpi)
