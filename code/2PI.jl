@@ -260,7 +260,7 @@ function step_C33!(C33,D33,Input,h,N,phi)
     for i in N:-1:1
         in = i == 1 ? N : i - 1
         for j in 1:N
-            C33[i,j] = h*D33[i,j] + C33[in,j]*exp((F_phi(phi[in],I)-F_phi(phi[i],I))/nu)
+            C33[i,j] = (h*D33[in,j] + C33[in,j])*exp((F_phi(phi[in],Input)-F_phi(phi[i],Input))/nu)
         end
     end
 end
@@ -591,18 +591,36 @@ TBW
 
 function advect!(a,h,T)
     for t in 1:T
-        advect!(a,h)
+        advectfd!(a,h)
     end
 end
 
-function advectfd!(a,h)
-    N = length(a)
-    dphi = 2pi/N
-    phi = phases(N)
+function advectright!(a,Input,h,phi,dphi,N)
     for i in 1:N
         i1 = i == 1 ? N : i - 1
-        a[i] -= h*(dF(a[i],a[i1],I,phi[i],phi[i1],dphi))
+        a[i] -= h*(dF(a[i],a[i1],Input,phi[i],phi[i1],dphi))
     end
+end
+
+function advectleft!(a,Input,h,phi,dphi,N)
+    for i in 1:N
+        i1 = i == N ? 1 : i + 1
+        a[i] += h*(dF(a[i],a[i1],Input,phi[i],phi[i1],dphi))
+    end
+end
+
+function evolve_a(ain,Input,T,h,f! = advectleft!)
+    a = copy(ain)
+    phi,dphi,N = phase_set(a)
+    atot = zeros(N,T+1)
+    atot[:,1] = a
+    k = 2
+    for t in 1:T
+        f!(a,Input,h,phi,dphi,N)
+        atot[:,k] = a
+        k += 1
+    end
+    return atot,a
 end
 
 
@@ -629,19 +647,17 @@ function stepfd_D33!(D33,C11,dFadFa,I,h,N,phi,dphi)
     end
 end
 
-function evolvefd_C33(C33in,D33in,C11,a3,I,h,N,T,lag=1)
-    C33 = copy(C33in)
-    dphi = 2pi/N
-    phi = phases(N)
+function evolvefd_C33(C11,a3,I,h,T,lag=1)
+    phi,dphi,N = phase_set(a3)
     dFadFa = make_dFadFa(a3,phi,N)
-    # C33 = diagm(a_3)/dphi - a_3*a_3'
-    D33 = copy(D33in)
+    C33 = diagm(a3)/dphi - a3*a3'
+    D33 = zeros(N,N)
     C33tot = zeros(N,N,T+1)
     C33tot[:,:,1] = C33
     k = 2
     for t in 1:T
         stepfd_C33!(C33,D33,I,h,N,phi,dphi)
-        stepfd_D33!(D33,C11[t],dFadFa,I,h,N,phi,dphi)
+        stepfd_D33!(D33,C11,dFadFa,I,h,N,phi,dphi)
         if mod(t,lag) == 0
             C33tot[:,:,k] = C33
             k += 1
