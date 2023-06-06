@@ -157,12 +157,12 @@ function compute_D33(C33,Input)
     return D33*N*sqrt(Input)/pi
 end
 
-function compute_D33a(C33,Input)
+function compute_D33a(C33,Input,fprime=Fv)
     phi,_,N = phase_set(C33)
     D33 = Matrix{Float64}(undef,N,N)
     for i in 1:N, j in 1:N
         ip = i == N ? 1 : i + 1
-        D33[i,j] = (C33[i,j,2] - C33[i,j,1] + C33[ip,j,2] - C33[i,j,2])*N*sqrt(Input)/pi + Fv_phi(phi[i],Input)*C33[i,j,1]
+        D33[i,j] = (C33[i,j,2] - C33[i,j,1] + C33[ip,j,2] - C33[i,j,2])*N*sqrt(Input)/pi + fprime(phi[i],Input)*C33[i,j,1]
     end
     return D33 
 end
@@ -376,7 +376,7 @@ function stepfd_C33!(C33,D33,Input,h,N,phi,dphi)
         for j in 1:N
             # i1, j1 = indexr(i,j,N)
             # i1 = i == 1 ? N : i - 1
-            i1,i2 = index_sym(i,N)
+            # i1,i2 = index_sym(i,N)
             ir = indexr(i,N)
             C33[i,j] = C330[i,j] - h*(dF(C330[i,j],C330[ir,j],Input,phi[i],phi[ir],2*dphi) - D33[i,j] )
         end
@@ -421,16 +421,26 @@ function evolvefd_C33(C33,D33,C11,a3,Input,h,T,lag=1)
     end
     return C33tot,C33,D33
 end
-function evolvefd(C11,D33in,a3,p,h,T,lag=1)
+
+
+"""
+    evolvefd(C11,D33,a3,p,h,T,lag=1)
+    evolvefd(C33in,D33in,C11,D11,a3,p,h,T,lag=1)
+
+TBW
+"""
+evolvefd(D33,C11,a3,p,h,T,lag=1) = evolvefd(diagm(a3)*length(a3)/2pi - a3*a3',D33,C11,0,a3,p,h,T,lag)
+  
+
+function evolvefd(C33in,D33in,C11,D11,a3,p,h,T,lag=1)
     Input = p.Input
     sig2 = p.sigma^2
     beta2 = p.beta^2
     phi,dphi,N = phase_set(a3)
     dFadFa = make_dFadFa(a3,phi,N)
     D33 = copy(D33in)
-    C33 = diagm(a3)/dphi - a3*a3'
+    C33 = copy(C33in)
     k = 1
-    D11 = 0
     C11tot = zeros(T+1)
     C33tot = zeros(N,N,T+1)
     D33tot = zeros(N,N,T+1)
@@ -449,8 +459,9 @@ function evolvefd(C11,D33in,a3,p,h,T,lag=1)
             C11tot[k] = C11
         end
     end
-    return C33tot,D33tot,C11tot,C33,D33,C11
+    return C33tot,D33tot,C11tot,C33,D33,C11,D11
 end
+
 
 """
     step_C33tt(C33,C31,a3,h,N,dphi)
