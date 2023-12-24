@@ -186,38 +186,38 @@ end
 """
 
 
-function step_a3!(a3,C31,I,sigma2,h,N,dphi)
-    for i in 1:N
-        i1 = i == 1 ? N : i - 1
-        a3[i] -= h*(dF(a3[i],a3[i1],I,phi[i],phi[i1],dphi) - sigma2*dFu(C31[i],C31[i1],phi[i],phi[i1],dphi))
-    end
-end
+# function step_a3!(a3,C31,I,sigma2,h,N,dphi)
+#     for i in 1:N
+#         i1 = i == 1 ? N : i - 1
+#         a3[i] -= h*(dF(a3[i],a3[i1],I,phi[i],phi[i1],dphi) - sigma2*dFu(C31[i],C31[i1],phi[i],phi[i1],dphi))
+#     end
+# end
 
-function step_a3!(a3,C31,I,sigma2,h,N,dphi,T)
-    for t in 1:T
-        step_a3!(a3,C31,I,sigma2,h,N,dphi)
-    end
-end
+# function step_a3!(a3,C31,I,sigma2,h,N,dphi,T)
+#     for t in 1:T
+#         step_a3!(a3,C31,I,sigma2,h,N,dphi)
+#     end
+# end
 
-function step_D33!(D33,C11,dFadFa,Input,h,N,phi)
-    nu = 2*sqrt(Input)
-    for i in 1:N
-        for j in 1:N
-            jp = j == N ? 1 : j + 1
-            D33[i,j] = -h*dFadFa[i,jp]*exp((F_phi(phi[jp],I)-F_phi(phi[j],Input))/nu)*C11 + D33[i,jp]*exp((F_phi(phi[jp],Input)-F_phi(phi[j],Input))/nu)
-        end
-    end
-end
+# function step_D33!(D33,C11,dFadFa,Input,h,N,phi)
+#     nu = 2*sqrt(Input)
+#     for i in 1:N
+#         for j in 1:N
+#             jp = j == N ? 1 : j + 1
+#             D33[i,j] = -h*dFadFa[i,jp]*exp((F_phi(phi[jp],I)-F_phi(phi[j],Input))/nu)*C11 + D33[i,jp]*exp((F_phi(phi[jp],Input)-F_phi(phi[j],Input))/nu)
+#         end
+#     end
+# end
 
-function step_C33!(C33,D33,Input,h,N,phi)
-    nu = 2*sqrt(Input)
-    for i in N:-1:1
-        in = i == 1 ? N : i - 1
-        for j in 1:N
-            C33[i,j] = (h*D33[in,j] + C33[in,j])*exp((F_phi(phi[in],Input)-F_phi(phi[i],Input))/nu)
-        end
-    end
-end
+# function step_C33!(C33,D33,Input,h,N,phi)
+#     nu = 2*sqrt(Input)
+#     for i in N:-1:1
+#         in = i == 1 ? N : i - 1
+#         for j in 1:N
+#             C33[i,j] = (h*D33[in,j] + C33[in,j])*exp((F_phi(phi[in],Input)-F_phi(phi[i],Input))/nu)
+#         end
+#     end
+# end
 
 step_C11(C11,D11,h) = C11+h*D11
 
@@ -225,62 +225,62 @@ step_D11(D11,C11,C33,h,beta2,sig2) = D11 + h*beta2*(C11 - 4*sig2*C33)
 
 
 
-function evolve_C33(C11,D33in,a3,Input,T,lag=1)
-    phi,dphi,N = phase_set(a3)
-    dFadFa = make_dFadFa(a3,phi,N)
-    nu = 2*sqrt(Input)
-    C33 = diagm(a3)/dphi - a3*a3'
-    D33 = copy(D33in)
-    h = 2pi/N/nu
-    k = 1
-    C33tot = zeros(N,N,T+1)
-    D33tot = zeros(N,N,T+1)
-    C33tot[:,:,k] = C33
-    D33tot[:,:,k] = D33
-    for t in 1:T
-        step_D33!(D33,C11[t],dFadFa,Input,h,N,phi)
-        step_C33!(C33,D33,Input,h,N,phi)
-        if mod(t,lag) == 0
-            k += 1
-            C33tot[:,:,k] = C33
-            D33tot[:,:,k] = D33
-        end
-    end
-    return C33tot,D33tot,C33,D33
-end
+# function evolve_C33(C11,D33in,a3,Input,T,lag=1)
+#     phi,dphi,N = phase_set(a3)
+#     dFadFa = make_dFadFa(a3,phi,N)
+#     nu = 2*sqrt(Input)
+#     C33 = diagm(a3)/dphi - a3*a3'
+#     D33 = copy(D33in)
+#     h = 2pi/N/nu
+#     k = 1
+#     C33tot = zeros(N,N,T+1)
+#     D33tot = zeros(N,N,T+1)
+#     C33tot[:,:,k] = C33
+#     D33tot[:,:,k] = D33
+#     for t in 1:T
+#         step_D33!(D33,C11[t],dFadFa,Input,h,N,phi)
+#         step_C33!(C33,D33,Input,h,N,phi)
+#         if mod(t,lag) == 0
+#             k += 1
+#             C33tot[:,:,k] = C33
+#             D33tot[:,:,k] = D33
+#         end
+#     end
+#     return C33tot,D33tot,C33,D33
+# end
 
-function evolve(C11,D33in,a3,p,T,lag=1)
-    Input = p.Input
-    sig2 = p.sigma^2
-    beta2 = p.beta^2
-    phi,dphi,N = phase_set(a3)
-    dFadFa = make_dFadFa(a3,phi,N)
-    nu = 2*sqrt(Input)
-    D33 = copy(D33in)
-    C33 = diagm(a3)/dphi - a3*a3'
-    h = 2pi/N/nu
-    k = 1
-    D11 = 0
-    C11tot = zeros(T+1)
-    C33tot = zeros(N,N,T+1)
-    D33tot = zeros(N,N,T+1)
-    C33tot[:,:,k] = C33
-    D33tot[:,:,k] = D33
-    C11tot[k] = C11
-    for t in 1:T
-        D11 = step_D11(D11,C11,C33[end,end],h,beta2,sig2)
-        C11 = step_C11(C11,D11,h)
-        step_D33!(D33,C11,dFadFa,Input,h,N,phi)
-        step_C33!(C33,D33,Input,h,N,phi)
-        if mod(t,lag) == 0
-            k += 1
-            C33tot[:,:,k] = C33
-            D33tot[:,:,k] = D33
-            C11tot[k] = C11
-        end
-    end
-    return C33tot,D33tot,C11tot,C33,D33,C11
-end
+# function evolve(C11,D33in,a3,p,T,lag=1)
+#     Input = p.Input
+#     sig2 = p.sigma^2
+#     beta2 = p.beta^2
+#     phi,dphi,N = phase_set(a3)
+#     dFadFa = make_dFadFa(a3,phi,N)
+#     nu = 2*sqrt(Input)
+#     D33 = copy(D33in)
+#     C33 = diagm(a3)/dphi - a3*a3'
+#     h = 2pi/N/nu
+#     k = 1
+#     D11 = 0
+#     C11tot = zeros(T+1)
+#     C33tot = zeros(N,N,T+1)
+#     D33tot = zeros(N,N,T+1)
+#     C33tot[:,:,k] = C33
+#     D33tot[:,:,k] = D33
+#     C11tot[k] = C11
+#     for t in 1:T
+#         D11 = step_D11(D11,C11,C33[end,end],h,beta2,sig2)
+#         C11 = step_C11(C11,D11,h)
+#         step_D33!(D33,C11,dFadFa,Input,h,N,phi)
+#         step_C33!(C33,D33,Input,h,N,phi)
+#         if mod(t,lag) == 0
+#             k += 1
+#             C33tot[:,:,k] = C33
+#             D33tot[:,:,k] = D33
+#             C11tot[k] = C11
+#         end
+#     end
+#     return C33tot,D33tot,C11tot,C33,D33,C11
+# end
 
 
 function advect!(a,h,T)
@@ -319,40 +319,40 @@ function evolve_a(ain,Input,T,h,f! = advectleft!)
     return atot,a
 end
 
-function indexr(i,j,N)
-    if i == j
-        if i == 1
-            i1 = N
-            j1 = j
-        else
-            i1 = i
-            j1 = j-1
-        end
-    else
-        i1 = i - 1
-        j1 = j
-    end
-    i1,j1
-end
+# function indexr(i,j,N)
+#     if i == j
+#         if i == 1
+#             i1 = N
+#             j1 = j
+#         else
+#             i1 = i
+#             j1 = j-1
+#         end
+#     else
+#         i1 = i - 1
+#         j1 = j
+#     end
+#     i1,j1
+# end
 
-function indexl(i,j,N)
-    if j == i
-        if j == N
-            i1 = i
-            j1 = 1
-        else
-            i1 = i+1
-            j1 = j
-        end
-    else
-        i1 = i
-        j1 = j + 1
-    end
-    i1,j1
-end
+# function indexl(i,j,N)
+#     if j == i
+#         if j == N
+#             i1 = i
+#             j1 = 1
+#         else
+#             i1 = i+1
+#             j1 = j
+#         end
+#     else
+#         i1 = i
+#         j1 = j + 1
+#     end
+#     i1,j1
+# end
 
-indexl(i,N) = i == N ? 1 : i + 1
-indexr(i,N) = i == 1 ? N : i - 1
+indexp1(i,N) = i == N ? 1 : i + 1
+indexm1(i,N) = i == 1 ? N : i - 1
 
 function index_sym(i,N)
     if i == 1
@@ -374,10 +374,7 @@ function stepfd_C33!(C33,D33,Input,h,N,phi,dphi)
     C330 = copy(C33)
     for i in 1:N
         for j in 1:N
-            # i1, j1 = indexr(i,j,N)
-            # i1 = i == 1 ? N : i - 1
-            # i1,i2 = index_sym(i,N)
-            ir = indexr(i,N)
+            ir = indexm1(i,N)
             C33[i,j] = C330[i,j] - h*(dF(C330[i,j],C330[ir,j],Input,phi[i],phi[ir],2*dphi) - D33[i,j] )
         end
     end
@@ -387,10 +384,7 @@ function stepfd_D33!(D33,C11,dFadFa,Input,h,N,phi,dphi)
     D330 = copy(D33)
     for i in 1:N
         for j in 1:N
-            # i1,j1 = indexl(i,j,N)
-            # j1 = j == N ? 1 : j + 1
-            # j1,j2 = index_sym(j,N)
-            jl = indexl(j,N)
+            jl = indexp1(j,N)
             D33[i,j] = D330[i,j] - h*(dF(D330[i,j],D330[i,jl],Input,phi[j],phi[jl],2*dphi) + dFadFa[i,j]*C11)
         end
     end
@@ -461,7 +455,6 @@ function evolvefd(C33in,D33in,C11,D11,a3,p,h,T,lag=1)
     end
     return C33tot,D33tot,C11tot,C33,D33,C11,D11
 end
-
 
 """
     step_C33tt(C33,C31,a3,h,N,dphi)
