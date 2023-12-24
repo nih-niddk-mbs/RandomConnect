@@ -2,11 +2,10 @@ module RandomNet
 
 
 using Distributions
-using PyCall
-using PyPlot
+using Plots
 using LinearAlgebra
-using Random
-using Smoothers
+# using Random
+# using Smoothers
 
 export
     plot,
