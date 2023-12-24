@@ -85,7 +85,7 @@ Find covariance function of synaptic input
 
 - `u`: matrix of inputs, rows = neurons, cols = time
 """
-compute_c11(u,lags) = covariance(u,u,lags)
+compute_C11(u,lags) = covariance(u,u,lags)
 
 """
 m13(phases,u,Nphases)
