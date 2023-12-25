@@ -56,54 +56,54 @@ end
 
 """
 function set_params(;
-    dt = 0.1, #simulation timestep (ms)
-    Nsteps = 20000, # total time of simulation
-    Ncells = 10000, # number of neurons in network
-    maxrate = 500, # maximum average firing rate.
-    sigma = .2, # connection weight std
-    Input = 0.005,  # external input
-    threshold = pi,
-    reset = 2pi,
-    beta = .1, #40 #synaptic drive decay rate
-    alpha = .5 # extra parameter
-    )
+    dt=0.1, #simulation timestep (ms)
+    Nsteps=20000, # total time of simulation
+    Ncells=10000, # number of neurons in network
+    maxrate=500, # maximum average firing rate.
+    sigma=0.2, # connection weight std
+    Input=0.005,  # external input
+    threshold=pi,
+    reset=2pi,
+    beta=0.1, #40 #synaptic drive decay rate
+    alpha=0.5 # extra parameter
+)
 
-    phaseparams(dt,Nsteps,Ncells,maxrate,sigma,Input,threshold,reset,beta,alpha)
+    phaseparams(dt, Nsteps, Ncells, maxrate, sigma, Input, threshold, reset, beta, alpha)
 
 end
 
-function make_raster(times,ns,Nraster=100)
+function make_raster(times, ns, Nraster=100)
     # raster plot
-    figure(figsize=(10,10))
+    figure(figsize=(10, 10))
     for ci = 1:Nraster
-        plot(times[ci,1:ns[ci]], ci*ones(ns[ci]), marker=".", linestyle="", color="red")
+        plot(times[ci, 1:ns[ci]], ci * ones(ns[ci]), marker=".", linestyle="", color="red")
     end
-    ylim([0,Nraster])
+    ylim([0, Nraster])
     tight_layout()
 end
 
-function make_phaseplot(timev,phase)
-# membrane potential
-figure(figsize=(8,4))
-ci = 1
-plot(timev,phase[tind,ci],linewidth=1.0, color="C$(ci)", alpha=1.0)
-xlabel("time", fontsize=15)
-ylabel("phase", fontsize=15)
-tight_layout()
+function make_phaseplot(timev, phase)
+    # membrane potential
+    figure(figsize=(8, 4))
+    ci = 1
+    plot(timev, phase[tind, ci], linewidth=1.0, color="C$(ci)", alpha=1.0)
+    xlabel("time", fontsize=15)
+    ylabel("phase", fontsize=15)
+    tight_layout()
 end
 
 
 function make_synapseplot(synInTotal)
-# synaptic currents
-figure(figsize=(6,4.5))
-ci = 1
-# plot(timev,synInExc[tind,ci] .+ p.muemax,color="red",linewidth=0.5,alpha=1.0,label="synIn_exc + ext")
-# plot(timev,synInInh[tind,ci],color="blue",linewidth=0.5,alpha=2.0,label="synIn_inh")
-plot(timev,synInTotal[tind,ci],color="black",linewidth=0.5, alpha=1.0,label="synIn_total")
-legend(fontsize=10, frameon=false)
-xlabel("time", fontsize=15)
-ylabel("u", fontsize=15)
-tight_layout()
+    # synaptic currents
+    figure(figsize=(6, 4.5))
+    ci = 1
+    # plot(timev,synInExc[tind,ci] .+ p.muemax,color="red",linewidth=0.5,alpha=1.0,label="synIn_exc + ext")
+    # plot(timev,synInInh[tind,ci],color="blue",linewidth=0.5,alpha=2.0,label="synIn_inh")
+    plot(timev, synInTotal[tind, ci], color="black", linewidth=0.5, alpha=1.0, label="synIn_total")
+    legend(fontsize=10, frameon=false)
+    xlabel("time", fontsize=15)
+    ylabel("u", fontsize=15)
+    tight_layout()
 end
 
 
